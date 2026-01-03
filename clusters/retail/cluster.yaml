@@ -2,7 +2,7 @@ cluster:
   name: retail
   environment: prod
   owner: joe@gmail.com
-  created_at: 2026-01-03T20:07:56Z
+  created_at: 2026-01-03T20:16:05Z
   created_by: JQuay
 
 infrastructure:
@@ -12,10 +12,10 @@ infrastructure:
   disk_size: 30
 
 labels:
-  team: production support
+  team: productionsupport
   environment: prod
   managed-by: terraform
 
 tags:
-  - production support
+  - productionsupport
   - prod
