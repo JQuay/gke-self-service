@@ -136,9 +136,9 @@ jobs:
         with:
           token: ${{ secrets.PAT_TOKEN }}
           commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }}"
-          title: "🚀 [Create] ${{ steps.parse.outputs.cluster_name }}"
+          title: "[Create] ${{ steps.parse.outputs.cluster_name }}"
           body: |
-            ## 🚀 New Cluster
+            ##  New Cluster
             
             Auto-generated from issue #${{ github.event.issue.number }}
             
@@ -162,5 +162,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ **Approved!** PR created to provision your cluster.'
+              body: '**Approved!** PR created to provision your cluster.'
             });
