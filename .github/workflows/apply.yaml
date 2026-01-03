@@ -1,11 +1,11 @@
 name: Terraform Apply
 
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - 'clusters/**'
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'clusters/**'
 
 jobs:
   apply:
