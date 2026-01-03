@@ -55,7 +55,7 @@ jobs:
             const fs = require('fs');
             const clusters = '${{ steps.clusters.outputs.clusters }}'.split(' ').filter(c => c);
             
-            let body = '## 📋 Terraform Plan\n\n';
+            let body = '## Terraform Plan\n\n';
             
             for (const cluster of clusters) {
               const planPath = `clusters/${cluster}/plan.txt`;
