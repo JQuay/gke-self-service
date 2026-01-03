@@ -44,14 +44,10 @@ jobs:
         run: |
           CLUSTER="${{ steps.parse.outputs.cluster_name }}"
           
-          # Create cluster directory
           mkdir -p clusters/$CLUSTER
           
           # Create cluster.yaml
           cat <<YAML > clusters/$CLUSTER/cluster.yaml
-          # Cluster Configuration
-          # Edit this file to modify your cluster
-          
           cluster:
             name: $CLUSTER
             environment: ${{ steps.parse.outputs.environment }}
@@ -75,11 +71,16 @@ jobs:
             - ${{ steps.parse.outputs.environment }}
           YAML
           
-          # Create main.tf
-          cat <<'TERRAFORM' > clusters/$CLUSTER/main.tf
+          # Create main.tf with GCS backend
+          cat <<TERRAFORM > clusters/$CLUSTER/main.tf
           terraform {
             required_version = ">= 1.0"
-          
+            
+            backend "gcs" {
+              bucket = "$GCP_PROJECT_ID-tf-state"
+              prefix = "clusters/$CLUSTER"
+            }
+            
             required_providers {
               google = {
                 source  = "hashicorp/google"
@@ -93,12 +94,11 @@ jobs:
           }
           
           locals {
-            config = yamldecode(file("${path.module}/cluster.yaml"))
+            config = yamldecode(file("\${path.module}/cluster.yaml"))
           }
           
           module "gke_cluster" {
             source = "../../modules/gke-cluster"
-          
             project_id   = var.project_id
             cluster_name = local.config.cluster.name
             zone         = local.config.infrastructure.zone
@@ -130,8 +130,6 @@ jobs:
             default     = "$GCP_PROJECT_ID"
           }
           VARIABLES
-          
-          echo "Generated files for cluster: $CLUSTER"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
@@ -144,7 +142,6 @@ jobs:
             
             Auto-generated from issue #${{ github.event.issue.number }}
             
-            ### Configuration
             | Setting | Value |
             |---------|-------|
             | **Cluster** | ${{ steps.parse.outputs.cluster_name }} |
@@ -152,8 +149,6 @@ jobs:
             | **Zone** | ${{ steps.parse.outputs.zone }} |
             | **Nodes** | ${{ steps.parse.outputs.node_count }} |
             | **Machine Type** | ${{ steps.parse.outputs.machine_type }} |
-            | **Team** | ${{ steps.parse.outputs.team }} |
-            | **Owner** | ${{ steps.parse.outputs.owner_email }} |
             
             Closes #${{ github.event.issue.number }}
           branch: "create/${{ steps.parse.outputs.cluster_name }}"
