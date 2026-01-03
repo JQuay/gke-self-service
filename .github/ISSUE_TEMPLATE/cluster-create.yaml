@@ -1,0 +1,88 @@
+name: 🚀 Create New GKE Cluster
+description: Request a new GKE cluster
+title: "[Create] "
+labels: ["cluster-create", "pending-approval"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚀 New Cluster Request
+
+  - type: input
+    id: cluster_name
+    attributes:
+      label: Cluster Name
+      description: Unique name (lowercase, hyphens only)
+      placeholder: "team-a-dev"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - dev
+        - staging
+        - prod
+    validations:
+      required: true
+
+  - type: dropdown
+    id: zone
+    attributes:
+      label: GCP Zone
+      options:
+        - us-central1-a
+        - us-central1-b
+        - us-east1-b
+        - us-west1-a
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node_count
+    attributes:
+      label: Number of Nodes
+      options:
+        - "1"
+        - "2"
+        - "3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: machine_type
+    attributes:
+      label: Machine Type
+      options:
+        - e2-small
+        - e2-medium
+        - e2-standard-2
+    validations:
+      required: true
+
+  - type: input
+    id: team
+    attributes:
+      label: Team Name
+      placeholder: "platform"
+    validations:
+      required: true
+
+  - type: input
+    id: owner_email
+    attributes:
+      label: Owner Email
+      placeholder: "you@example.com"
+    validations:
+      required: true
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Justification
+      placeholder: "Why do you need this cluster?"
+    validations:
+      required: true

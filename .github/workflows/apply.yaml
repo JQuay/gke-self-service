@@ -1,0 +1,49 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'clusters/**'
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Find Changed Clusters
+        id: changes
+        run: |
+          MODIFIED=$(git diff --name-only HEAD~1 | grep "^clusters/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+          echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
+
+      - name: Terraform Apply
+        if: steps.changes.outputs.modified != ''
+        run: |
+          for cluster in ${{ steps.changes.outputs.modified }}; do
+            if [ -f "clusters/$cluster/main.tf" ]; then
+              echo "=== Applying: $cluster ==="
+              cd clusters/$cluster
+              terraform init
+              terraform apply -auto-approve
+              echo "=== Outputs ==="
+              terraform output
+              cd ../..
+            fi
+          done
