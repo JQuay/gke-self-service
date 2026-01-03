@@ -4,8 +4,8 @@ on:
   pull_request:
     branches:
       - main
-    # paths:
-    #   - 'clusters/**'
+    paths:
+      - 'clusters/**'
     #   - 'modules/**'
 
 jobs:
