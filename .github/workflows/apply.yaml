@@ -1,6 +1,13 @@
 name: Terraform Apply
 
 on:
+  # Only run when manually triggered OR when PR is merged
+  workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: 'Cluster name to apply'
+        required: true
+        type: string
   push:
     branches:
       - main
@@ -10,6 +17,8 @@ on:
 jobs:
   apply:
     runs-on: ubuntu-latest
+    # Add environment for manual approval
+    environment: production
 
     steps:
       - name: Checkout
@@ -30,8 +39,12 @@ jobs:
       - name: Find Changed Clusters
         id: changes
         run: |
-          MODIFIED=$(git diff --name-only HEAD~1 | grep "^clusters/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
-          echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
+          if [ -n "${{ github.event.inputs.cluster_name }}" ]; then
+            echo "modified=${{ github.event.inputs.cluster_name }}" >> $GITHUB_OUTPUT
+          else
+            MODIFIED=$(git diff --name-only HEAD~1 | grep "^clusters/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+            echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
+          fi
 
       - name: Terraform Apply
         if: steps.changes.outputs.modified != ''
