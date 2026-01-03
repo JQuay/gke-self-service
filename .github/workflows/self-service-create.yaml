@@ -151,7 +151,7 @@ jobs:
             | **Machine Type** | ${{ steps.parse.outputs.machine_type }} |
             
             Closes #${{ github.event.issue.number }}
-          branch: "create/${{ steps.parse.outputs.cluster_name }}"
+          branch: "${{ steps.parse.outputs.cluster_name }}-${{ steps.parse.outputs.environment }}-${{ secrets.GCP_PROJECT_ID }}-${{ github.event.issue.number }}"
           labels: infrastructure
 
       - name: Comment on Issue
