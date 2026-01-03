@@ -134,7 +134,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }}"
           title: "🚀 [Create] ${{ steps.parse.outputs.cluster_name }}"
           body: |
