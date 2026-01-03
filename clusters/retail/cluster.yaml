@@ -1,0 +1,21 @@
+cluster:
+  name: retail
+  environment: prod
+  owner: joe@gmail.com
+  created_at: 2026-01-03T20:07:56Z
+  created_by: JQuay
+
+infrastructure:
+  zone: us-central1-a
+  node_count: 2
+  machine_type: e2-small
+  disk_size: 30
+
+labels:
+  team: production support
+  environment: prod
+  managed-by: terraform
+
+tags:
+  - production support
+  - prod
