@@ -1,4 +1,4 @@
-name: 🚀 Create New GKE Cluster
+name:  Create New GKE Cluster
 description: Request a new GKE cluster
 title: "[Create] "
 labels: ["cluster-create", "pending-approval"]
@@ -7,9 +7,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 🚀 New Cluster Request
+        ##  New Cluster Request
         
-        > ⏳ **Note:** After submitting, a Platform team member will review 
+        >  **Note:** After submitting, a Platform team member will review 
         > and add the `approved` label to begin provisioning.
 
   # ===========================
@@ -87,7 +87,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 📈 Autoscaling Configuration
+        ## Autoscaling Configuration
 
   - type: dropdown
     id: enable_autoscaling
