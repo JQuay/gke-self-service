@@ -8,13 +8,20 @@ body:
     attributes:
       value: |
         ## 🚀 New Cluster Request
+        
+        > ⏳ **Note:** After submitting, a Platform team member will review 
+        > and add the `approved` label to begin provisioning.
+
+  # ===========================
+  # BASIC INFO
+  # ===========================
 
   - type: input
     id: cluster_name
     attributes:
       label: Cluster Name
       description: Unique name (lowercase, hyphens only)
-      placeholder: "team-a-dev"
+      placeholder: "my-team-dev (lowercase, letters, numbers, hyphens only)"
     validations:
       required: true
 
@@ -41,16 +48,14 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: node_count
+  # ===========================
+  # NODE CONFIGURATION
+  # ===========================
+
+  - type: markdown
     attributes:
-      label: Number of Nodes
-      options:
-        - "1"
-        - "2"
-        - "3"
-    validations:
-      required: true
+      value: |
+        ## 🖥️ Node Configuration
 
   - type: dropdown
     id: machine_type
@@ -60,8 +65,107 @@ body:
         - e2-small
         - e2-medium
         - e2-standard-2
+        - e2-standard-4
     validations:
       required: true
+
+  - type: dropdown
+    id: disk_size
+    attributes:
+      label: Disk Size (GB)
+      options:
+        - "30"
+        - "50"
+        - "100"
+    validations:
+      required: true
+
+  # ===========================
+  # AUTOSCALING
+  # ===========================
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 📈 Autoscaling Configuration
+
+  - type: dropdown
+    id: enable_autoscaling
+    attributes:
+      label: Enable Autoscaling?
+      description: Automatically adjust the number of nodes based on workload
+      options:
+        - "no"
+        - "yes"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node_count
+    attributes:
+      label: Number of Nodes (if autoscaling disabled)
+      description: Fixed node count when autoscaling is OFF
+      options:
+        - "1"
+        - "2"
+        - "3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: min_nodes
+    attributes:
+      label: Minimum Nodes (if autoscaling enabled)
+      description: Minimum number of nodes to keep running
+      options:
+        - "1"
+        - "2"
+        - "3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: max_nodes
+    attributes:
+      label: Maximum Nodes (if autoscaling enabled)
+      description: Maximum number of nodes to scale up to
+      options:
+        - "3"
+        - "5"
+        - "10"
+        - "15"
+        - "50"
+    validations:
+      required: true
+
+  # ===========================
+  # COST OPTIMIZATION
+  # ===========================
+
+  - type: markdown
+    attributes:
+      value: |
+        ##  Cost Optimization
+
+  - type: dropdown
+    id: use_spot_vms
+    attributes:
+      label: Use Spot VMs?
+      description: Up to 90% cost savings, but VMs can be preempted (good for dev/staging)
+      options:
+        - "no"
+        - "yes"
+    validations:
+      required: true
+
+  # ===========================
+  # OWNERSHIP
+  # ===========================
+
+  - type: markdown
+    attributes:
+      value: |
+        ##  Ownership
 
   - type: input
     id: team
@@ -83,6 +187,6 @@ body:
     id: justification
     attributes:
       label: Justification
-      placeholder: "Why do you need this cluster?"
+      placeholder: "Why do you need this cluster? What workloads will run on it?"
     validations:
       required: true
