@@ -1,0 +1,31 @@
+# Auto-generated from: https://github.com/JQuay/gke-self-service/issues/30
+
+cluster:
+  name: retail-rx
+  environment: staging
+  owner: "joe@gmail.com"
+  created_at: 2026-01-04T00:21:04Z
+  created_by: JQuay
+
+infrastructure:
+  zone: us-central1-a
+  machine_type: e2-small
+  disk_size: 
+
+autoscaling:
+  enabled: false
+  node_count: 
+  min_nodes: 
+  max_nodes: 
+
+cost_optimization:
+  use_spot_vms: false
+
+labels:
+  team: prod
+  environment: staging
+  managed-by: terraform
+
+tags:
+  - prod
+  - staging
