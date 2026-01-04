@@ -25,7 +25,9 @@ jobs:
               const body = context.payload.issue.body;
               
               const getValue = (label) => {
-                const regex = new RegExp(`### ${label}\\s*\\n\\s*(.+)`, 'i');
+                // Escape special regex characters in the label
+                const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(`### ${escapedLabel}\\s*\\n\\s*(.+)`, 'i');
                 const match = body.match(regex);
                 return match ? match[1].trim() : '';
               };
@@ -37,22 +39,31 @@ jobs:
               
               // Node Configuration
               core.setOutput('machine_type', getValue('Machine Type'));
-              core.setOutput('disk_size', getValue('Disk Size \$GB\$'));
-              core.setOutput('node_count', getValue('Number of Nodes \$if autoscaling disabled\$'));
+              core.setOutput('disk_size', getValue('Disk Size (GB)'));
+              core.setOutput('node_count', getValue('Number of Nodes (if autoscaling disabled)'));
               
               // Autoscaling
-              const enableAutoscaling = getValue('Enable Autoscaling\\?');
+              const enableAutoscaling = getValue('Enable Autoscaling?');
               core.setOutput('enable_autoscaling', enableAutoscaling === 'yes' ? 'true' : 'false');
-              core.setOutput('min_nodes', getValue('Minimum Nodes \$if autoscaling enabled\$'));
-              core.setOutput('max_nodes', getValue('Maximum Nodes \$if autoscaling enabled\$'));
+              core.setOutput('min_nodes', getValue('Minimum Nodes (if autoscaling enabled)'));
+              core.setOutput('max_nodes', getValue('Maximum Nodes (if autoscaling enabled)'));
               
               // Cost Optimization
-              const useSpotVms = getValue('Use Spot VMs\\?');
+              const useSpotVms = getValue('Use Spot VMs?');
               core.setOutput('use_spot_vms', useSpotVms === 'yes' ? 'true' : 'false');
               
               // Ownership
               core.setOutput('team', getValue('Team Name'));
               core.setOutput('owner_email', getValue('Owner Email'));
+              
+              // Debug output
+              console.log('Parsed values:');
+              console.log('- disk_size:', getValue('Disk Size (GB)'));
+              console.log('- node_count:', getValue('Number of Nodes (if autoscaling disabled)'));
+              console.log('- min_nodes:', getValue('Minimum Nodes (if autoscaling enabled)'));
+              console.log('- max_nodes:', getValue('Maximum Nodes (if autoscaling enabled)'));
+              console.log('- enable_autoscaling:', enableAutoscaling);
+              console.log('- use_spot_vms:', useSpotVms);
 
         - name: Validate Inputs
           run: |
