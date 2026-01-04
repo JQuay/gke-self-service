@@ -1,0 +1,31 @@
+# Auto-generated from: https://github.com/JQuay/gke-self-service/issues/28
+
+cluster:
+  name: payment-auth
+  environment: dev
+  owner: "joe@gmail.com"
+  created_at: 2026-01-04T00:14:04Z
+  created_by: JQuay
+
+infrastructure:
+  zone: us-west1-a
+  machine_type: e2-small
+  disk_size: 
+
+autoscaling:
+  enabled: true
+  node_count: 
+  min_nodes: 
+  max_nodes: 
+
+cost_optimization:
+  use_spot_vms: true
+
+labels:
+  team: platform
+  environment: dev
+  managed-by: terraform
+
+tags:
+  - platform
+  - dev
