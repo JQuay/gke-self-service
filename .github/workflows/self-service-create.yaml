@@ -1,282 +1,282 @@
-name: Self-Service Create Cluster
+# name: Self-Service Create Cluster
 
-on:
-  issues:
-    types: [labeled]
+# on:
+#   issues:
+#     types: [labeled]
 
-jobs:
-  create-cluster:
-    if: github.event.label.name == 'approved' && contains(github.event.issue.labels.*.name, 'cluster-create')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+# jobs:
+#   create-cluster:
+#     if: github.event.label.name == 'approved' && contains(github.event.issue.labels.*.name, 'cluster-create')
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: write
+#       issues: write
+#       pull-requests: write
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+#       steps:
+#         - name: Checkout
+#           uses: actions/checkout@v4
 
-        - name: Parse Issue
-          id: parse
-          uses: actions/github-script@v7
-          with:
-            script: |
-              const body = context.payload.issue.body;
+#         - name: Parse Issue
+#           id: parse
+#           uses: actions/github-script@v7
+#           with:
+#             script: |
+#               const body = context.payload.issue.body;
               
-              const getValue = (label) => {
-                const regex = new RegExp(`### ${label}\\s*\\n\\s*(.+)`, 'i');
-                const match = body.match(regex);
-                return match ? match[1].trim() : '';
-              };
+#               const getValue = (label) => {
+#                 const regex = new RegExp(`### ${label}\\s*\\n\\s*(.+)`, 'i');
+#                 const match = body.match(regex);
+#                 return match ? match[1].trim() : '';
+#               };
               
-              // Basic Info
-              core.setOutput('cluster_name', getValue('Cluster Name'));
-              core.setOutput('environment', getValue('Environment'));
-              core.setOutput('zone', getValue('GCP Zone'));
+#               // Basic Info
+#               core.setOutput('cluster_name', getValue('Cluster Name'));
+#               core.setOutput('environment', getValue('Environment'));
+#               core.setOutput('zone', getValue('GCP Zone'));
               
-              // Node Configuration
-              core.setOutput('machine_type', getValue('Machine Type'));
-              core.setOutput('disk_size', getValue('Disk Size \$GB\$'));
-              core.setOutput('node_count', getValue('Number of Nodes \$if autoscaling disabled\$'));
+#               // Node Configuration
+#               core.setOutput('machine_type', getValue('Machine Type'));
+#               core.setOutput('disk_size', getValue('Disk Size \$GB\$'));
+#               core.setOutput('node_count', getValue('Number of Nodes \$if autoscaling disabled\$'));
               
-              // Autoscaling
-              const enableAutoscaling = getValue('Enable Autoscaling\\?');
-              core.setOutput('enable_autoscaling', enableAutoscaling === 'yes' ? 'true' : 'false');
-              core.setOutput('min_nodes', getValue('Minimum Nodes \$if autoscaling enabled\$'));
-              core.setOutput('max_nodes', getValue('Maximum Nodes \$if autoscaling enabled\$'));
+#               // Autoscaling
+#               const enableAutoscaling = getValue('Enable Autoscaling\\?');
+#               core.setOutput('enable_autoscaling', enableAutoscaling === 'yes' ? 'true' : 'false');
+#               core.setOutput('min_nodes', getValue('Minimum Nodes \$if autoscaling enabled\$'));
+#               core.setOutput('max_nodes', getValue('Maximum Nodes \$if autoscaling enabled\$'));
               
-              // Cost Optimization
-              const useSpotVms = getValue('Use Spot VMs\\?');
-              core.setOutput('use_spot_vms', useSpotVms === 'yes' ? 'true' : 'false');
+#               // Cost Optimization
+#               const useSpotVms = getValue('Use Spot VMs\\?');
+#               core.setOutput('use_spot_vms', useSpotVms === 'yes' ? 'true' : 'false');
               
-              // Ownership
-              core.setOutput('team', getValue('Team Name'));
-              core.setOutput('owner_email', getValue('Owner Email'));
+#               // Ownership
+#               core.setOutput('team', getValue('Team Name'));
+#               core.setOutput('owner_email', getValue('Owner Email'));
 
-        - name: Validate Inputs
-          run: |
-            CLUSTER="${{ steps.parse.outputs.cluster_name }}"
+#         - name: Validate Inputs
+#           run: |
+#             CLUSTER="${{ steps.parse.outputs.cluster_name }}"
             
-            # Check cluster name is not empty
-            if [[ -z "$CLUSTER" ]]; then
-              echo " Cluster name is empty!"
-              exit 1
-            fi
+#             # Check cluster name is not empty
+#             if [[ -z "$CLUSTER" ]]; then
+#               echo " Cluster name is empty!"
+#               exit 1
+#             fi
             
-            # Validate cluster name format
-            if [[ ! "$CLUSTER" =~ ^[a-z][a-z0-9-]*$ ]]; then
-              echo " Invalid cluster name format! Use lowercase, numbers, hyphens only."
-              exit 1
-            fi
+#             # Validate cluster name format
+#             if [[ ! "$CLUSTER" =~ ^[a-z][a-z0-9-]*$ ]]; then
+#               echo " Invalid cluster name format! Use lowercase, numbers, hyphens only."
+#               exit 1
+#             fi
             
-            echo "Inputs validated successfully"
+#             echo "Inputs validated successfully"
 
-        - name: Check Cluster Exists
-          run: |
-            CLUSTER="${{ steps.parse.outputs.cluster_name }}"
-            if [[ -d "clusters/$CLUSTER" ]]; then
-              echo " Cluster '$CLUSTER' already exists!"
-              exit 1
-            fi
-            echo "Cluster name is available"
+#         - name: Check Cluster Exists
+#           run: |
+#             CLUSTER="${{ steps.parse.outputs.cluster_name }}"
+#             if [[ -d "clusters/$CLUSTER" ]]; then
+#               echo " Cluster '$CLUSTER' already exists!"
+#               exit 1
+#             fi
+#             echo "Cluster name is available"
 
-        - name: Generate Branch Name
-          id: branch
-          env:
-            GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          run: |
-            CLUSTER="${{ steps.parse.outputs.cluster_name }}"
-            ENV="${{ steps.parse.outputs.environment }}"
-            ISSUE="${{ github.event.issue.number }}"
+#         - name: Generate Branch Name
+#           id: branch
+#           env:
+#             GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#           run: |
+#             CLUSTER="${{ steps.parse.outputs.cluster_name }}"
+#             ENV="${{ steps.parse.outputs.environment }}"
+#             ISSUE="${{ github.event.issue.number }}"
             
-            BRANCH_NAME="${CLUSTER}-${ENV}-${GCP_PROJECT_ID}-${ISSUE}"
-            echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-            echo "Branch name: $BRANCH_NAME"
+#             BRANCH_NAME="${CLUSTER}-${ENV}-${GCP_PROJECT_ID}-${ISSUE}"
+#             echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+#             echo "Branch name: $BRANCH_NAME"
 
-        - name: Generate Cluster Files
-          env:
-            GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          run: |
-            CLUSTER="${{ steps.parse.outputs.cluster_name }}"
+#         - name: Generate Cluster Files
+#           env:
+#             GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#           run: |
+#             CLUSTER="${{ steps.parse.outputs.cluster_name }}"
             
-            mkdir -p clusters/$CLUSTER
+#             mkdir -p clusters/$CLUSTER
             
-            # Create cluster.yaml
-            cat <<YAML > clusters/$CLUSTER/cluster.yaml
-            # Auto-generated from: https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}
+#             # Create cluster.yaml
+#             cat <<YAML > clusters/$CLUSTER/cluster.yaml
+#             # Auto-generated from: https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}
             
-            cluster:
-              name: $CLUSTER
-              environment: ${{ steps.parse.outputs.environment }}
-              owner: "${{ steps.parse.outputs.owner_email }}"
-              created_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-              created_by: ${{ github.event.issue.user.login }}
+#             cluster:
+#               name: $CLUSTER
+#               environment: ${{ steps.parse.outputs.environment }}
+#               owner: "${{ steps.parse.outputs.owner_email }}"
+#               created_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+#               created_by: ${{ github.event.issue.user.login }}
             
-            infrastructure:
-              zone: ${{ steps.parse.outputs.zone }}
-              machine_type: ${{ steps.parse.outputs.machine_type }}
-              disk_size: ${{ steps.parse.outputs.disk_size }}
+#             infrastructure:
+#               zone: ${{ steps.parse.outputs.zone }}
+#               machine_type: ${{ steps.parse.outputs.machine_type }}
+#               disk_size: ${{ steps.parse.outputs.disk_size }}
             
-            autoscaling:
-              enabled: ${{ steps.parse.outputs.enable_autoscaling }}
-              node_count: ${{ steps.parse.outputs.node_count }}
-              min_nodes: ${{ steps.parse.outputs.min_nodes }}
-              max_nodes: ${{ steps.parse.outputs.max_nodes }}
+#             autoscaling:
+#               enabled: ${{ steps.parse.outputs.enable_autoscaling }}
+#               node_count: ${{ steps.parse.outputs.node_count }}
+#               min_nodes: ${{ steps.parse.outputs.min_nodes }}
+#               max_nodes: ${{ steps.parse.outputs.max_nodes }}
             
-            cost_optimization:
-              use_spot_vms: ${{ steps.parse.outputs.use_spot_vms }}
+#             cost_optimization:
+#               use_spot_vms: ${{ steps.parse.outputs.use_spot_vms }}
             
-            labels:
-              team: ${{ steps.parse.outputs.team }}
-              environment: ${{ steps.parse.outputs.environment }}
-              managed-by: terraform
+#             labels:
+#               team: ${{ steps.parse.outputs.team }}
+#               environment: ${{ steps.parse.outputs.environment }}
+#               managed-by: terraform
             
-            tags:
-              - ${{ steps.parse.outputs.team }}
-              - ${{ steps.parse.outputs.environment }}
-            YAML
+#             tags:
+#               - ${{ steps.parse.outputs.team }}
+#               - ${{ steps.parse.outputs.environment }}
+#             YAML
             
-            # Create main.tf with GCS backend
-            cat <<TERRAFORM > clusters/$CLUSTER/main.tf
-            terraform {
-              required_version = ">= 1.0"
+#             # Create main.tf with GCS backend
+#             cat <<TERRAFORM > clusters/$CLUSTER/main.tf
+#             terraform {
+#               required_version = ">= 1.0"
               
-              backend "gcs" {
-                bucket = "${GCP_PROJECT_ID}-tf-state"
-                prefix = "clusters/${CLUSTER}"
-              }
+#               backend "gcs" {
+#                 bucket = "${GCP_PROJECT_ID}-tf-state"
+#                 prefix = "clusters/${CLUSTER}"
+#               }
               
-              required_providers {
-                google = {
-                  source  = "hashicorp/google"
-                  version = "~> 5.0"
-                }
-              }
-            }
+#               required_providers {
+#                 google = {
+#                   source  = "hashicorp/google"
+#                   version = "~> 5.0"
+#                 }
+#               }
+#             }
             
-            provider "google" {
-              project = var.project_id
-            }
+#             provider "google" {
+#               project = var.project_id
+#             }
             
-            locals {
-              config = yamldecode(file("\${path.module}/cluster.yaml"))
-            }
+#             locals {
+#               config = yamldecode(file("\${path.module}/cluster.yaml"))
+#             }
             
-            module "gke_cluster" {
-              source = "../../modules/gke-cluster"
+#             module "gke_cluster" {
+#               source = "../../modules/gke-cluster"
               
-              # Basic
-              project_id   = var.project_id
-              cluster_name = local.config.cluster.name
-              zone         = local.config.infrastructure.zone
+#               # Basic
+#               project_id   = var.project_id
+#               cluster_name = local.config.cluster.name
+#               zone         = local.config.infrastructure.zone
               
-              # Node Config
-              machine_type = local.config.infrastructure.machine_type
-              disk_size    = local.config.infrastructure.disk_size
+#               # Node Config
+#               machine_type = local.config.infrastructure.machine_type
+#               disk_size    = local.config.infrastructure.disk_size
               
-              # Autoscaling
-              enable_autoscaling = local.config.autoscaling.enabled
-              node_count         = local.config.autoscaling.node_count
-              min_node_count     = local.config.autoscaling.min_nodes
-              max_node_count     = local.config.autoscaling.max_nodes
+#               # Autoscaling
+#               enable_autoscaling = local.config.autoscaling.enabled
+#               node_count         = local.config.autoscaling.node_count
+#               min_node_count     = local.config.autoscaling.min_nodes
+#               max_node_count     = local.config.autoscaling.max_nodes
               
-              # Cost Optimization
-              use_spot_vms = local.config.cost_optimization.use_spot_vms
+#               # Cost Optimization
+#               use_spot_vms = local.config.cost_optimization.use_spot_vms
               
-              # Labels & Tags
-              labels = local.config.labels
-              tags   = local.config.tags
-            }
+#               # Labels & Tags
+#               labels = local.config.labels
+#               tags   = local.config.tags
+#             }
             
-            output "cluster_name" {
-              value = module.gke_cluster.cluster_name
-            }
+#             output "cluster_name" {
+#               value = module.gke_cluster.cluster_name
+#             }
             
-            output "cluster_zone" {
-              value = module.gke_cluster.cluster_zone
-            }
+#             output "cluster_zone" {
+#               value = module.gke_cluster.cluster_zone
+#             }
             
-            output "get_credentials_command" {
-              value = module.gke_cluster.get_credentials_command
-            }
+#             output "get_credentials_command" {
+#               value = module.gke_cluster.get_credentials_command
+#             }
             
-            output "autoscaling_enabled" {
-              value = module.gke_cluster.autoscaling_enabled
-            }
-            TERRAFORM
+#             output "autoscaling_enabled" {
+#               value = module.gke_cluster.autoscaling_enabled
+#             }
+#             TERRAFORM
             
-            # Create variables.tf
-            cat <<VARIABLES > clusters/$CLUSTER/variables.tf
-            variable "project_id" {
-              description = "GCP Project ID"
-              type        = string
-              default     = "${GCP_PROJECT_ID}"
-            }
-            VARIABLES
+#             # Create variables.tf
+#             cat <<VARIABLES > clusters/$CLUSTER/variables.tf
+#             variable "project_id" {
+#               description = "GCP Project ID"
+#               type        = string
+#               default     = "${GCP_PROJECT_ID}"
+#             }
+#             VARIABLES
 
-        - name: Create Pull Request
-          uses: peter-evans/create-pull-request@v5
-          with:
-            token: ${{ secrets.PAT_TOKEN }}
-            commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }}"
-            title: " [Create] ${{ steps.parse.outputs.cluster_name }}"
-            body: |
-              ##  New Cluster Request
+#         - name: Create Pull Request
+#           uses: peter-evans/create-pull-request@v5
+#           with:
+#             token: ${{ secrets.PAT_TOKEN }}
+#             commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }}"
+#             title: " [Create] ${{ steps.parse.outputs.cluster_name }}"
+#             body: |
+#               ##  New Cluster Request
               
-              Auto-generated from issue #${{ github.event.issue.number }}
+#               Auto-generated from issue #${{ github.event.issue.number }}
               
-              ###  Basic Info
-              | Setting | Value |
-              |---------|-------|
-              | **Cluster** | `${{ steps.parse.outputs.cluster_name }}` |
-              | **Environment** | `${{ steps.parse.outputs.environment }}` |
-              | **Zone** | `${{ steps.parse.outputs.zone }}` |
+#               ###  Basic Info
+#               | Setting | Value |
+#               |---------|-------|
+#               | **Cluster** | `${{ steps.parse.outputs.cluster_name }}` |
+#               | **Environment** | `${{ steps.parse.outputs.environment }}` |
+#               | **Zone** | `${{ steps.parse.outputs.zone }}` |
               
-              ###  Node Configuration
-              | Setting | Value |
-              |---------|-------|
-              | **Machine Type** | `${{ steps.parse.outputs.machine_type }}` |
-              | **Disk Size** | `${{ steps.parse.outputs.disk_size }} GB` |
+#               ###  Node Configuration
+#               | Setting | Value |
+#               |---------|-------|
+#               | **Machine Type** | `${{ steps.parse.outputs.machine_type }}` |
+#               | **Disk Size** | `${{ steps.parse.outputs.disk_size }} GB` |
               
-              ### Autoscaling
-              | Setting | Value |
-              |---------|-------|
-              | **Enabled** | `${{ steps.parse.outputs.enable_autoscaling }}` |
-              | **Node Count** | `${{ steps.parse.outputs.node_count }}` |
-              | **Min Nodes** | `${{ steps.parse.outputs.min_nodes }}` |
-              | **Max Nodes** | `${{ steps.parse.outputs.max_nodes }}` |
+#               ### Autoscaling
+#               | Setting | Value |
+#               |---------|-------|
+#               | **Enabled** | `${{ steps.parse.outputs.enable_autoscaling }}` |
+#               | **Node Count** | `${{ steps.parse.outputs.node_count }}` |
+#               | **Min Nodes** | `${{ steps.parse.outputs.min_nodes }}` |
+#               | **Max Nodes** | `${{ steps.parse.outputs.max_nodes }}` |
               
-              ### Cost Optimization
-              | Setting | Value |
-              |---------|-------|
-              | **Spot VMs** | `${{ steps.parse.outputs.use_spot_vms }}` |
+#               ### Cost Optimization
+#               | Setting | Value |
+#               |---------|-------|
+#               | **Spot VMs** | `${{ steps.parse.outputs.use_spot_vms }}` |
               
-              ---
-              Closes #${{ github.event.issue.number }}
-            branch: ${{ steps.branch.outputs.name }}
-            labels: infrastructure
+#               ---
+#               Closes #${{ github.event.issue.number }}
+#             branch: ${{ steps.branch.outputs.name }}
+#             labels: infrastructure
 
-        - name: Comment on Issue - Success
-          if: success()
-          uses: actions/github-script@v7
-          with:
-            script: |
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '**Approved!** PR created to provision your cluster.\n\n **Autoscaling:** ${{ steps.parse.outputs.enable_autoscaling }}\n **Spot VMs:** ${{ steps.parse.outputs.use_spot_vms }}'
-              });
+#         - name: Comment on Issue - Success
+#           if: success()
+#           uses: actions/github-script@v7
+#           with:
+#             script: |
+#               github.rest.issues.createComment({
+#                 issue_number: context.issue.number,
+#                 owner: context.repo.owner,
+#                 repo: context.repo.repo,
+#                 body: '**Approved!** PR created to provision your cluster.\n\n **Autoscaling:** ${{ steps.parse.outputs.enable_autoscaling }}\n **Spot VMs:** ${{ steps.parse.outputs.use_spot_vms }}'
+#               });
 
-        - name: Comment on Issue - Failure
-          if: failure()
-          uses: actions/github-script@v7
-          with:
-            script: |
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '**Failed to create PR.** Please check the workflow logs.'
-              });
+#         - name: Comment on Issue - Failure
+#           if: failure()
+#           uses: actions/github-script@v7
+#           with:
+#             script: |
+#               github.rest.issues.createComment({
+#                 issue_number: context.issue.number,
+#                 owner: context.repo.owner,
+#                 repo: context.repo.repo,
+#                 body: '**Failed to create PR.** Please check the workflow logs.'
+#               });
