@@ -478,7 +478,6 @@ jobs:
           commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }} [${{ steps.parse.outputs.change_ticket }}]"
           title: "[Create] ${{ steps.parse.outputs.cluster_name }} | ${{ steps.parse.outputs.change_ticket }}"
           body: |
-          body: |
             ## New Cluster Request
             
             Auto-generated from issue #${{ github.event.issue.number }}
