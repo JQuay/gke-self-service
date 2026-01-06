@@ -74,14 +74,13 @@ jobs:
           PROJECT="${{ steps.parse.outputs.gcp_project_id }}"
           BUCKET="${PROJECT}-tf-state"
           
-          if gsutil ls -b gs://${BUCKET} 2>/dev/null; then
-            echo " Bucket gs://${BUCKET} already exists"
-          else
-            echo " Creating bucket gs://${BUCKET}..."
-            gsutil mb -p ${PROJECT} -l us-central1 gs://${BUCKET}
-            gsutil versioning set on gs://${BUCKET}
-            echo " Bucket created with versioning enabled"
-          fi
+          # Create bucket (ignore error if already exists)
+          gsutil mb -p ${PROJECT} -l us-central1 gs://${BUCKET} 2>/dev/null || echo "Bucket already exists"
+          
+          # Enable versioning (ignore error if already enabled)
+          gsutil versioning set on gs://${BUCKET} 2>/dev/null || true
+          
+          echo "Bucket gs://${BUCKET} is ready"
 
       - name: Validate Inputs
         run: |
