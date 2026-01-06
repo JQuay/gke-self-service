@@ -61,46 +61,64 @@ jobs:
             core.setOutput('team', getValue('Team Name'));
             core.setOutput('owner_email', getValue('Owner Email'));
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup GCP SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Ensure State Bucket Exists
+        run: |
+          PROJECT="${{ steps.parse.outputs.gcp_project_id }}"
+          BUCKET="${PROJECT}-tf-state"
+          
+          if gsutil ls -b gs://${BUCKET} 2>/dev/null; then
+            echo " Bucket gs://${BUCKET} already exists"
+          else
+            echo " Creating bucket gs://${BUCKET}..."
+            gsutil mb -p ${PROJECT} -l us-central1 gs://${BUCKET}
+            gsutil versioning set on gs://${BUCKET}
+            echo " Bucket created with versioning enabled"
+          fi
+
       - name: Validate Inputs
         run: |
           CLUSTER="${{ steps.parse.outputs.cluster_name }}"
           PROJECT="${{ steps.parse.outputs.gcp_project_id }}"
           CHANGE_TICKET="${{ steps.parse.outputs.change_ticket }}"
           
-          # Check cluster name
           if [[ -z "$CLUSTER" ]]; then
-            echo "Cluster name is empty!"
+            echo " Cluster name is empty!"
             exit 1
           fi
           
-          # Validate cluster name format
           if [[ ! "$CLUSTER" =~ ^[a-z][a-z0-9-]*$ ]]; then
-            echo "Invalid cluster name format! Use lowercase, numbers, hyphens only."
+            echo " Invalid cluster name format! Use lowercase, numbers, hyphens only."
             exit 1
           fi
           
-          # Check project ID
           if [[ -z "$PROJECT" ]]; then
-            echo "GCP Project ID is empty!"
+            echo " GCP Project ID is empty!"
             exit 1
           fi
           
-          # Check change ticket
           if [[ -z "$CHANGE_TICKET" ]]; then
-            echo "Change Ticket Number is empty!"
+            echo " Change Ticket Number is empty!"
             exit 1
           fi
           
-          echo "Inputs validated successfully"
+          echo " Inputs validated successfully"
 
       - name: Check Cluster Exists
         run: |
           CLUSTER="${{ steps.parse.outputs.cluster_name }}"
           if [[ -d "clusters/$CLUSTER" ]]; then
-            echo "Cluster '$CLUSTER' already exists!"
+            echo " Cluster '$CLUSTER' already exists!"
             exit 1
           fi
-          echo "Cluster name is available"
+          echo " Cluster name is available"
 
       - name: Generate Branch Name
         id: branch
@@ -114,7 +132,7 @@ jobs:
           echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "Branch name: $BRANCH_NAME"
 
-           - name: Generate Cluster Files
+      - name: Generate Cluster Files
         run: |
           CLUSTER="${{ steps.parse.outputs.cluster_name }}"
           PROJECT="${{ steps.parse.outputs.gcp_project_id }}"
@@ -123,14 +141,12 @@ jobs:
           NODE_COUNT="${{ steps.parse.outputs.node_count }}"
           MIN_NODES="${{ steps.parse.outputs.min_nodes }}"
           
-          # If autoscaling enabled, use min_nodes as node_count
           if [[ "$ENABLE_AUTOSCALING" == "true" ]]; then
             NODE_COUNT="$MIN_NODES"
           fi
           
           mkdir -p clusters/$CLUSTER
           
-          # Create cluster.yaml
           cat <<YAML > clusters/$CLUSTER/cluster.yaml
           # Auto-generated from: https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}
           
@@ -172,7 +188,6 @@ jobs:
             - $ENV
           YAML
           
-          # Create main.tf with GCS backend (state path: cluster-name/environment)
           cat <<TERRAFORM > clusters/$CLUSTER/main.tf
           terraform {
             required_version = ">= 1.0"
@@ -201,25 +216,20 @@ jobs:
           module "gke_cluster" {
             source = "../../modules/gke-cluster"
             
-            # Basic
             project_id   = local.config.cluster.project_id
             cluster_name = local.config.cluster.name
             zone         = local.config.infrastructure.zone
             
-            # Node Config
             machine_type = local.config.infrastructure.machine_type
             disk_size    = local.config.infrastructure.disk_size
             
-            # Autoscaling
             enable_autoscaling = local.config.autoscaling.enabled
             node_count         = local.config.autoscaling.node_count
             min_node_count     = local.config.autoscaling.min_nodes
             max_node_count     = local.config.autoscaling.max_nodes
             
-            # Cost Optimization
             use_spot_vms = local.config.cost_optimization.use_spot_vms
             
-            # Labels & Tags
             labels = local.config.labels
             tags   = local.config.tags
           }
@@ -241,14 +251,13 @@ jobs:
           }
           TERRAFORM
           
-          # Create variables.tf
           cat <<VARIABLES > clusters/$CLUSTER/variables.tf
           variable "project_id" {
             description = "GCP Project ID"
             type        = string
             default     = "${PROJECT}"
           }
-          VARIABLES 
+          VARIABLES
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
@@ -257,17 +266,17 @@ jobs:
           commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }} [${{ steps.parse.outputs.change_ticket }}]"
           title: " [Create] ${{ steps.parse.outputs.cluster_name }} | ${{ steps.parse.outputs.change_ticket }}"
           body: |
-            ## New Cluster Request
+            ##  New Cluster Request
             
             Auto-generated from issue #${{ github.event.issue.number }}
             
-            ### Change Management
+            ###  Change Management
             | Setting | Value |
             |---------|-------|
             | **Change Ticket** | `${{ steps.parse.outputs.change_ticket }}` |
             | **Approved By** | @${{ github.actor }} |
             
-            ### Project Info
+            ###  Project Info
             | Setting | Value |
             |---------|-------|
             | **GCP Project** | `${{ steps.parse.outputs.gcp_project_id }}` |
@@ -275,13 +284,13 @@ jobs:
             | **Environment** | `${{ steps.parse.outputs.environment }}` |
             | **Zone** | `${{ steps.parse.outputs.zone }}` |
             
-            ### Node Configuration
+            ###  Node Configuration
             | Setting | Value |
             |---------|-------|
             | **Machine Type** | `${{ steps.parse.outputs.machine_type }}` |
             | **Disk Size** | `${{ steps.parse.outputs.disk_size }} GB` |
             
-            ### Autoscaling
+            ###  Autoscaling
             | Setting | Value |
             |---------|-------|
             | **Enabled** | `${{ steps.parse.outputs.enable_autoscaling }}` |
@@ -308,12 +317,12 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `**Approved!** PR created to provision your cluster.
+              body: ` **Approved!** PR created to provision your cluster.
               
-               **Change Ticket:** ${{ steps.parse.outputs.change_ticket }}
-               **Project:** ${{ steps.parse.outputs.gcp_project_id }}
-               **Autoscaling:** ${{ steps.parse.outputs.enable_autoscaling }}
-               **Spot VMs:** ${{ steps.parse.outputs.use_spot_vms }}`
+             **Change Ticket:** ${{ steps.parse.outputs.change_ticket }}
+             **Project:** ${{ steps.parse.outputs.gcp_project_id }}
+             **Autoscaling:** ${{ steps.parse.outputs.enable_autoscaling }}
+             **Spot VMs:** ${{ steps.parse.outputs.use_spot_vms }}`
             });
 
       - name: Comment on Issue - Failure
@@ -327,8 +336,6 @@ jobs:
               repo: context.repo.repo,
               body: '**Failed to create PR.** Please check the workflow logs.'
             });
-
-
 
 # name: Self-Service Create Cluster
 
