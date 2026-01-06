@@ -36,6 +36,15 @@ jobs:
               return match ? match[1].trim() : '';
             };
             
+            // Helper to handle empty or "_No response_" values
+            const getValueWithDefault = (label, defaultValue) => {
+              const value = getValue(label);
+              if (!value || value === '_No response_' || value === 'N/A') {
+                return defaultValue;
+              }
+              return value;
+            };
+            
             // Change Management
             core.setOutput('change_ticket', getValue('Change Ticket Number'));
             
@@ -47,11 +56,9 @@ jobs:
             core.setOutput('environment', getValue('Environment'));
             core.setOutput('zone', getValue('GCP Zone'));
             
-            // Networking
-            const vpcName = getValue('VPC Network Name') || getValue('VPC Network') || 'default';
-            const subnetName = getValue('Subnet Name') || getValue('Subnet') || 'default';
-            core.setOutput('vpc_name', vpcName);
-            core.setOutput('subnet_name', subnetName);
+            // Networking (with defaults)
+            core.setOutput('vpc_name', getValueWithDefault('VPC Network Name', 'default'));
+            core.setOutput('subnet_name', getValueWithDefault('Subnet Name', 'default'));
             
             // Node Configuration
             core.setOutput('machine_type', getValue('Machine Type'));
