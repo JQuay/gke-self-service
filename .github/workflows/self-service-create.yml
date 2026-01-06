@@ -20,6 +20,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+
+
       - name: Parse Issue
         id: parse
         uses: actions/github-script@v7
@@ -45,6 +47,12 @@ jobs:
             core.setOutput('environment', getValue('Environment'));
             core.setOutput('zone', getValue('GCP Zone'));
             
+            // Networking
+            const vpcName = getValue('VPC Network Name') || getValue('VPC Network') || 'default';
+            const subnetName = getValue('Subnet Name') || getValue('Subnet') || 'default';
+            core.setOutput('vpc_name', vpcName);
+            core.setOutput('subnet_name', subnetName);
+            
             // Node Configuration
             core.setOutput('machine_type', getValue('Machine Type'));
             core.setOutput('disk_size', getValue('Disk Size (GB)'));
@@ -63,6 +71,50 @@ jobs:
             // Ownership
             core.setOutput('team', getValue('Team Name'));
             core.setOutput('owner_email', getValue('Owner Email'));
+
+      # - name: Parse Issue
+      #   id: parse
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       const body = context.payload.issue.body;
+            
+      #       const getValue = (label) => {
+      #         const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      #         const regex = new RegExp(`### ${escapedLabel}\\s*\\n\\s*(.+)`, 'i');
+      #         const match = body.match(regex);
+      #         return match ? match[1].trim() : '';
+      #       };
+            
+      #       // Change Management
+      #       core.setOutput('change_ticket', getValue('Change Ticket Number'));
+            
+      #       // Project Info
+      #       core.setOutput('gcp_project_id', getValue('GCP Project ID'));
+            
+      #       // Basic Info
+      #       core.setOutput('cluster_name', getValue('Cluster Name'));
+      #       core.setOutput('environment', getValue('Environment'));
+      #       core.setOutput('zone', getValue('GCP Zone'));
+            
+      #       // Node Configuration
+      #       core.setOutput('machine_type', getValue('Machine Type'));
+      #       core.setOutput('disk_size', getValue('Disk Size (GB)'));
+      #       core.setOutput('node_count', getValue('Number of Nodes (if autoscaling disabled)'));
+            
+      #       // Autoscaling
+      #       const enableAutoscaling = getValue('Enable Autoscaling?');
+      #       core.setOutput('enable_autoscaling', enableAutoscaling === 'yes' ? 'true' : 'false');
+      #       core.setOutput('min_nodes', getValue('Minimum Nodes (if autoscaling enabled)'));
+      #       core.setOutput('max_nodes', getValue('Maximum Nodes (if autoscaling enabled)'));
+            
+      #       // Cost Optimization
+      #       const useSpotVms = getValue('Use Spot VMs?');
+      #       core.setOutput('use_spot_vms', useSpotVms === 'yes' ? 'true' : 'false');
+            
+      #       // Ownership
+      #       core.setOutput('team', getValue('Team Name'));
+      #       core.setOutput('owner_email', getValue('Owner Email'));
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -134,6 +186,7 @@ jobs:
           echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "Branch name: $BRANCH_NAME"
 
+
       - name: Generate Cluster Files
         run: |
           CLUSTER="${{ steps.parse.outputs.cluster_name }}"
@@ -144,8 +197,10 @@ jobs:
           MIN_NODES="${{ steps.parse.outputs.min_nodes }}"
           CHANGE_TICKET="${{ steps.parse.outputs.change_ticket }}"
           TEAM="${{ steps.parse.outputs.team }}"
+          VPC_NAME="${{ steps.parse.outputs.vpc_name }}"
+          SUBNET_NAME="${{ steps.parse.outputs.subnet_name }}"
           
-          # Convert to lowercase for GCP labels (GCP only allows lowercase)
+          # Convert to lowercase for GCP labels
           CHANGE_TICKET_LOWER=$(echo "$CHANGE_TICKET" | tr '[:upper:]' '[:lower:]')
           TEAM_LOWER=$(echo "$TEAM" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
           ENV_LOWER=$(echo "$ENV" | tr '[:upper:]' '[:lower:]')
@@ -172,6 +227,10 @@ jobs:
             owner: "${{ steps.parse.outputs.owner_email }}"
             created_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
             created_by: ${{ github.event.issue.user.login }}
+          
+          networking:
+            vpc_name: $VPC_NAME
+            subnet_name: $SUBNET_NAME
           
           infrastructure:
             zone: ${{ steps.parse.outputs.zone }}
@@ -230,16 +289,24 @@ jobs:
             cluster_name = local.config.cluster.name
             zone         = local.config.infrastructure.zone
             
+            # Networking
+            vpc_name    = local.config.networking.vpc_name
+            subnet_name = local.config.networking.subnet_name
+            
+            # Node Config
             machine_type = local.config.infrastructure.machine_type
             disk_size    = local.config.infrastructure.disk_size
             
+            # Autoscaling
             enable_autoscaling = local.config.autoscaling.enabled
             node_count         = local.config.autoscaling.node_count
             min_node_count     = local.config.autoscaling.min_nodes
             max_node_count     = local.config.autoscaling.max_nodes
             
+            # Cost Optimization
             use_spot_vms = local.config.cost_optimization.use_spot_vms
             
+            # Labels & Tags
             labels = local.config.labels
             tags   = local.config.tags
           }
@@ -268,6 +335,141 @@ jobs:
             default     = "${PROJECT}"
           }
           VARIABLES
+          
+      # - name: Generate Cluster Files
+      #   run: |
+      #     CLUSTER="${{ steps.parse.outputs.cluster_name }}"
+      #     PROJECT="${{ steps.parse.outputs.gcp_project_id }}"
+      #     ENV="${{ steps.parse.outputs.environment }}"
+      #     ENABLE_AUTOSCALING="${{ steps.parse.outputs.enable_autoscaling }}"
+      #     NODE_COUNT="${{ steps.parse.outputs.node_count }}"
+      #     MIN_NODES="${{ steps.parse.outputs.min_nodes }}"
+      #     CHANGE_TICKET="${{ steps.parse.outputs.change_ticket }}"
+      #     TEAM="${{ steps.parse.outputs.team }}"
+          
+      #     # Convert to lowercase for GCP labels (GCP only allows lowercase)
+      #     CHANGE_TICKET_LOWER=$(echo "$CHANGE_TICKET" | tr '[:upper:]' '[:lower:]')
+      #     TEAM_LOWER=$(echo "$TEAM" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+      #     ENV_LOWER=$(echo "$ENV" | tr '[:upper:]' '[:lower:]')
+          
+      #     if [[ "$ENABLE_AUTOSCALING" == "true" ]]; then
+      #       NODE_COUNT="$MIN_NODES"
+      #     fi
+          
+      #     mkdir -p clusters/$CLUSTER
+          
+      #     cat <<YAML > clusters/$CLUSTER/cluster.yaml
+      #     # Auto-generated from: https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}
+          
+      #     change_management:
+      #       ticket: $CHANGE_TICKET
+      #       ticket_label: $CHANGE_TICKET_LOWER
+      #       approved_by: ${{ github.actor }}
+      #       approved_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+      #     cluster:
+      #       name: $CLUSTER
+      #       project_id: $PROJECT
+      #       environment: $ENV
+      #       owner: "${{ steps.parse.outputs.owner_email }}"
+      #       created_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      #       created_by: ${{ github.event.issue.user.login }}
+          
+      #     infrastructure:
+      #       zone: ${{ steps.parse.outputs.zone }}
+      #       machine_type: ${{ steps.parse.outputs.machine_type }}
+      #       disk_size: ${{ steps.parse.outputs.disk_size }}
+          
+      #     autoscaling:
+      #       enabled: $ENABLE_AUTOSCALING
+      #       node_count: $NODE_COUNT
+      #       min_nodes: ${{ steps.parse.outputs.min_nodes }}
+      #       max_nodes: ${{ steps.parse.outputs.max_nodes }}
+          
+      #     cost_optimization:
+      #       use_spot_vms: ${{ steps.parse.outputs.use_spot_vms }}
+          
+      #     labels:
+      #       team: $TEAM_LOWER
+      #       environment: $ENV_LOWER
+      #       managed-by: terraform
+      #       change-ticket: $CHANGE_TICKET_LOWER
+          
+      #     tags:
+      #       - $TEAM_LOWER
+      #       - $ENV_LOWER
+      #     YAML
+          
+      #     cat <<TERRAFORM > clusters/$CLUSTER/main.tf
+      #     terraform {
+      #       required_version = ">= 1.0"
+            
+      #       backend "gcs" {
+      #         bucket = "${PROJECT}-tf-state"
+      #         prefix = "${CLUSTER}/${ENV_LOWER}"
+      #       }
+            
+      #       required_providers {
+      #         google = {
+      #           source  = "hashicorp/google"
+      #           version = "~> 5.0"
+      #         }
+      #       }
+      #     }
+          
+      #     provider "google" {
+      #       project = var.project_id
+      #     }
+          
+      #     locals {
+      #       config = yamldecode(file("\${path.module}/cluster.yaml"))
+      #     }
+          
+      #     module "gke_cluster" {
+      #       source = "../../modules/gke-cluster"
+            
+      #       project_id   = local.config.cluster.project_id
+      #       cluster_name = local.config.cluster.name
+      #       zone         = local.config.infrastructure.zone
+            
+      #       machine_type = local.config.infrastructure.machine_type
+      #       disk_size    = local.config.infrastructure.disk_size
+            
+      #       enable_autoscaling = local.config.autoscaling.enabled
+      #       node_count         = local.config.autoscaling.node_count
+      #       min_node_count     = local.config.autoscaling.min_nodes
+      #       max_node_count     = local.config.autoscaling.max_nodes
+            
+      #       use_spot_vms = local.config.cost_optimization.use_spot_vms
+            
+      #       labels = local.config.labels
+      #       tags   = local.config.tags
+      #     }
+          
+      #     output "cluster_name" {
+      #       value = module.gke_cluster.cluster_name
+      #     }
+          
+      #     output "cluster_zone" {
+      #       value = module.gke_cluster.cluster_zone
+      #     }
+          
+      #     output "get_credentials_command" {
+      #       value = module.gke_cluster.get_credentials_command
+      #     }
+          
+      #     output "autoscaling_enabled" {
+      #       value = module.gke_cluster.autoscaling_enabled
+      #     }
+      #     TERRAFORM
+          
+      #     cat <<VARIABLES > clusters/$CLUSTER/variables.tf
+      #     variable "project_id" {
+      #       description = "GCP Project ID"
+      #       type        = string
+      #       default     = "${PROJECT}"
+      #     }
+      #     VARIABLES
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
@@ -275,6 +477,7 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           commit-message: "Create cluster: ${{ steps.parse.outputs.cluster_name }} [${{ steps.parse.outputs.change_ticket }}]"
           title: "[Create] ${{ steps.parse.outputs.cluster_name }} | ${{ steps.parse.outputs.change_ticket }}"
+          body: |
           body: |
             ## New Cluster Request
             
@@ -293,6 +496,12 @@ jobs:
             | **Cluster** | `${{ steps.parse.outputs.cluster_name }}` |
             | **Environment** | `${{ steps.parse.outputs.environment }}` |
             | **Zone** | `${{ steps.parse.outputs.zone }}` |
+            
+            ### Networking
+            | Setting | Value |
+            |---------|-------|
+            | **VPC Network** | `${{ steps.parse.outputs.vpc_name }}` |
+            | **Subnet** | `${{ steps.parse.outputs.subnet_name }}` |
             
             ### Node Configuration
             | Setting | Value |

@@ -15,7 +15,6 @@ body:
   # ===========================
   # CHANGE MANAGEMENT
   # ===========================
-
   - type: input
     id: change_ticket
     attributes:
@@ -37,6 +36,33 @@ body:
       placeholder: "my-project-id"
     validations:
       required: true
+
+  # ===========================
+  # NETWORKING
+  # ===========================
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Networking
+
+  - type: input
+    id: vpc_name
+    attributes:
+      label: VPC Network Name
+      description: Name of the VPC network (leave empty for "default")
+      placeholder: "my-custom-vpc"
+    validations:
+      required: false
+
+  - type: input
+    id: subnet_name
+    attributes:
+      label: Subnet Name
+      description: Name of the subnet (leave empty for "default")
+      placeholder: "my-subnet"
+    validations:
+      required: false   
 
   # ===========================
   # BASIC INFO

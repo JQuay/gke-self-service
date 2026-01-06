@@ -127,3 +127,20 @@ variable "use_spot_vms" {
   type        = bool
   default     = false
 }
+
+
+# ===========================
+# NETWORKING
+# ===========================
+
+variable "vpc_name" {
+  description = "Name of the VPC network"
+  type        = string
+  default     = "default"
+}
+
+variable "subnet_name" {
+  description = "Name of the subnet"
+  type        = string
+  default     = "default"
+}
