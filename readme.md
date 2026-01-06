@@ -4,15 +4,6 @@ A GitOps-based self-service platform that enables developers to request and prov
 
 ---
 
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Workflow](#workflow)
-- [Prerequisites](#prerequisites)
----
-
 ## 🎯 Overview
 
 This project provides a self-service platform for GKE cluster provisioning using:
@@ -21,6 +12,7 @@ This project provides a self-service platform for GKE cluster provisioning using
 - **GitHub Actions** — Automated workflows
 - **Terraform** — Infrastructure as Code
 - **GCS Backend** — Remote state management
+
 
 ### Benefits
 
