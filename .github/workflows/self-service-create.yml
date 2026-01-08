@@ -10,7 +10,7 @@ jobs:
       github.event.label.name == 'approved' && 
       contains(github.event.issue.labels.*.name, 'cluster-create') &&
       contains(github.event.issue.labels.*.name, 'pending-approval')
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: write
       issues: write
