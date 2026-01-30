@@ -9,7 +9,7 @@ on:
 
 jobs:
   apply:
-    runs-on: self-hosted
+    runs-on: ubuntu
 
     steps:
       - name: Checkout
