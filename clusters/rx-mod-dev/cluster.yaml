@@ -1,0 +1,43 @@
+# Auto-generated from: https://github.com/JQuay/gke-self-service/issues/52
+
+change_management:
+  ticket: CH12345
+  ticket_label: ch12345
+  approved_by: JQuay
+  approved_at: 2026-01-30T00:59:31Z
+
+cluster:
+  name: rx-mod-dev
+  project_id: fabled-citadel-482020-i0
+  environment: dev
+  owner: "joe@gmail.com"
+  created_at: 2026-01-30T00:59:31Z
+  created_by: JQuay
+
+networking:
+  vpc_name: default
+  subnet_name: default
+
+infrastructure:
+  zone: us-central1-a
+  machine_type: e2-small
+  disk_size: 30
+
+autoscaling:
+  enabled: false
+  node_count: 1
+  min_nodes: 1
+  max_nodes: 3
+
+cost_optimization:
+  use_spot_vms: true
+
+labels:
+  team: platform
+  environment: dev
+  managed-by: terraform
+  change-ticket: ch12345
+
+tags:
+  - platform
+  - dev
