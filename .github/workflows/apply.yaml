@@ -9,7 +9,7 @@ on:
 
 jobs:
   apply:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
