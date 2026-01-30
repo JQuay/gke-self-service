@@ -10,7 +10,7 @@ on:
 
 jobs:
   plan:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
